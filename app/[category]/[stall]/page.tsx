@@ -6,7 +6,7 @@ import { getStallBySlug } from "@/lib/data";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, Phone, Instagram, MapPin, Tag, ZoomIn } from "lucide-react";
+import { ArrowLeft, Phone, Instagram, MapPin, ZoomIn, Sparkles, Trophy, MessageCircle, Star, Gift, QrCode } from "lucide-react";
 import ImageViewer from "@/components/ui/image-viewer";
 
 type PageProps = {
@@ -128,10 +128,57 @@ export default function StallPage({ params }: PageProps) {
                 {/* Right Column: Key Details & Pricing */}
                 <div className="space-y-8">
 
-                    {/* Owner Details Card */}
-                    <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 shadow-xl">
-                        <h3 className="text-xl font-bold mb-6 border-b pb-2">Stall Owner</h3>
+                    {/* Location Card */}
+                    <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-indigo-600">
+                            <MapPin className="w-5 h-5" />
+                            Location
+                        </h3>
                         <div className="space-y-4">
+                            {stallData.availableAt && (
+                                <div>
+                                    <p className="text-xs font-bold text-neutral-400 uppercase mb-1">Available At</p>
+                                    <ul className="space-y-1">
+                                        {stallData.availableAt.map((loc, idx) => (
+                                            <li key={idx} className="text-neutral-700 font-medium flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                                {loc}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {stallData.stallNumber && (
+                                <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200 inline-block">
+                                    <p className="text-xs font-bold text-neutral-400 uppercase mb-1">Stall No.</p>
+                                    <p className="text-2xl font-black text-neutral-800">{stallData.stallNumber}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Offers Card */}
+                    {stallData.offers && (
+                        <div className="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-2xl border border-pink-100 shadow-sm">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-rose-600">
+                                <Gift className="w-5 h-5" />
+                                Current Offers
+                            </h3>
+                            <ul className="space-y-3">
+                                {stallData.offers.map((offer, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 text-neutral-800 font-medium">
+                                        <span className="text-xl">🎉</span>
+                                        <span>{offer}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Owner & Contact Card */}
+                    <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100 shadow-xl">
+                        <h3 className="text-xl font-bold mb-6 border-b pb-2">Contact & Order</h3>
+                        <div className="space-y-4 mb-6">
                             <div className="flex items-center gap-3 text-lg font-medium">
                                 <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
                                     <span className="text-xl font-bold">{stallData.ownerName.charAt(0)}</span>
@@ -156,23 +203,84 @@ export default function StallPage({ params }: PageProps) {
                                 </a>
                             )}
                         </div>
+
+                        {/* Payment & Ordering Info */}
+                        <div className="bg-white p-4 rounded-xl border border-neutral-200 space-y-3">
+                            {stallData.paymentMethods && (
+                                <div>
+                                    <p className="text-xs font-bold text-neutral-400 uppercase mb-2">Payment</p>
+                                    <div className="flex gap-2">
+                                        {stallData.paymentMethods.map((pm, i) => (
+                                            <span key={i} className="px-2 py-1 bg-neutral-100 text-neutral-600 text-xs font-bold rounded flex items-center gap-1">
+                                                {pm === 'UPI' && <QrCode className="w-3 h-3" />}
+                                                {pm}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div>
+                                <p className="text-xs font-bold text-neutral-400 uppercase mb-2">How to Order</p>
+                                <p className="text-sm text-neutral-600">DM us on Instagram or visit our stall directly to place your order!</p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Pricing List */}
-                    {stallData.items && stallData.items.length > 0 && (
+                    {/* Stall Highlights */}
+                    {stallData.highlights && (
                         <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
-                            <h3 className="text-xl font-bold mb-6 border-b pb-2 flex items-center gap-2">
-                                <Tag className="w-5 h-5 text-green-600" />
-                                Menu / Price List
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-orange-600">
+                                <Sparkles className="w-5 h-5" />
+                                Why Buy From Us?
                             </h3>
                             <ul className="space-y-3">
-                                {stallData.items.map((item, idx) => (
-                                    <li key={idx} className="flex justify-between items-center text-neutral-700 py-2 border-b border-dashed border-neutral-200 last:border-0 hover:bg-neutral-50 rounded px-2 transition-colors">
-                                        <span>{item.name}</span>
-                                        <span className="font-bold text-green-700 bg-green-50 px-2 py-1 rounded">{item.price}</span>
+                                {stallData.highlights.map((highlight, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 text-neutral-700">
+                                        <div className="mt-1 min-w-[6px] min-h-[6px] rounded-full bg-orange-500" />
+                                        <span>{highlight}</span>
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+
+                    {/* Best Sellers */}
+                    {stallData.bestSellers && (
+                        <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-2xl border border-orange-100 shadow-sm">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-red-600">
+                                <Trophy className="w-5 h-5" />
+                                Best Sellers
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {stallData.bestSellers.map((item, idx) => (
+                                    <span key={idx} className="bg-white text-neutral-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm border border-orange-100">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reviews */}
+                    {stallData.reviews && (
+                        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <MessageCircle className="w-5 h-5 text-blue-500" />
+                                Customer Love
+                            </h3>
+                            <div className="space-y-4">
+                                {stallData.reviews.map((review, idx) => (
+                                    <div key={idx} className="border-b border-dashed border-neutral-100 last:border-0 pb-3 last:pb-0">
+                                        <div className="flex items-center gap-1 text-yellow-500 mb-1">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? "fill-current" : "text-neutral-300"}`} />
+                                            ))}
+                                        </div>
+                                        <p className="text-neutral-600 italic text-sm mb-1">"{review.comment}"</p>
+                                        <p className="text-xs font-bold text-neutral-400">- {review.user}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
