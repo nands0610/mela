@@ -22,7 +22,22 @@ export default function LoginPage() {
         const supabase = createBrowserSupabaseClient();
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
-          router.replace("/owner/stall");
+          // Try to access protected API to verify allowlist
+          const token = data.session.access_token;
+          const res = await fetch("/api/stalls", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (res.ok) {
+            // User is allowed, redirect to dashboard
+            router.replace("/owner/stall");
+          } else if (res.status === 403) {
+            // User is not in allowlist, sign them out
+            await supabase.auth.signOut();
+            setAuthStatus("for that you have to put stall next year bye bye 👋");
+          }
         }
       } catch {
         // Ignore session check errors on load.
@@ -41,7 +56,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/owner/stall`,
+          redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -100,7 +115,11 @@ export default function LoginPage() {
         </div>
 
         {authStatus && (
-          <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+            authStatus.includes("bye bye")
+              ? "border-orange-200 bg-orange-50 text-orange-700"
+              : "border-red-100 bg-red-50 text-red-700"
+          }`}>
             {authStatus}
           </div>
         )}

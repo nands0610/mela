@@ -188,6 +188,15 @@ export default function StallOwnerPage() {
           },
         });
 
+        if (response.status === 403) {
+          // Email not in allowlist
+          await supabase.auth.signOut();
+          setStatusMessage("for that you have to put stall next year bye bye 👋");
+          setOwnerEmail(null);
+          setIsLoading(false);
+          return;
+        }
+
         if (response.ok) {
           const result = await response.json();
           const payload = result.submission?.payload as
@@ -521,7 +530,11 @@ export default function StallOwnerPage() {
           Please sign in to continue
         </h1>
         {statusMessage && (
-          <p className="max-w-md text-sm text-neutral-600">{statusMessage}</p>
+          <p className={`max-w-md text-sm ${
+            statusMessage.includes("bye bye")
+              ? "text-orange-600 font-medium"
+              : "text-neutral-600"
+          }`}>{statusMessage}</p>
         )}
         <button
           type="button"
@@ -981,7 +994,11 @@ export default function StallOwnerPage() {
                 </button>
               </div>
               {statusMessage && (
-                <p className="mt-4 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+                <p className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+                  statusMessage.includes("bye bye")
+                    ? "border-orange-200 bg-orange-50 text-orange-700"
+                    : "border-neutral-100 bg-neutral-50 text-neutral-700"
+                }`}>
                   {statusMessage}
                 </p>
               )}

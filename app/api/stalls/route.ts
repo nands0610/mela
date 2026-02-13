@@ -80,6 +80,22 @@ async function getRequestContext(request: NextRequest) {
     };
   }
 
+  // Check allowlist
+  const { data: allowed, error: allowError } = await supabase
+    .from("allowed_owners")
+    .select("email")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (allowError || !allowed) {
+    return {
+      response: NextResponse.json(
+        { error: "Email not authorized" },
+        { status: 403 }
+      ),
+    };
+  }
+
   return { supabase, email };
 }
 
