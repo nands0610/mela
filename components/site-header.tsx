@@ -224,16 +224,25 @@ export function SiteHeader() {
                     <div className="h-px bg-neutral-100 my-2" />
                     {!isAuthLoading && (
                         isAuthenticated ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsOpen(false);
-                                    void handleSignOut();
-                                }}
-                                className="flex items-center justify-center w-full px-4 py-3 bg-neutral-900 text-white rounded-lg font-medium"
-                            >
-                                Sign out
-                            </button>
+                            <div className="space-y-3">
+                                <Link
+                                    href="/owner/stall"
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex items-center justify-center w-full px-4 py-3 border border-neutral-200 text-neutral-800 rounded-lg font-medium"
+                                >
+                                    Edit profile
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        void handleSignOut();
+                                    }}
+                                    className="flex items-center justify-center w-full px-4 py-3 bg-neutral-900 text-white rounded-lg font-medium"
+                                >
+                                    Sign out
+                                </button>
+                            </div>
                         ) : (
                             <Link
                                 href="/login"

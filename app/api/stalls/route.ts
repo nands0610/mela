@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { ALLOWED_OWNER_EMAILS } from "@/lib/auth/allowlist";
 
 const REQUIRED_FIELDS = [
   "name",
@@ -72,10 +71,10 @@ async function getRequestContext(request: NextRequest) {
   }
 
   const email = data.user.email?.toLowerCase();
-  if (!email || !ALLOWED_OWNER_EMAILS.includes(email)) {
+  if (!email) {
     return {
       response: NextResponse.json(
-        { error: "Email not allowed" },
+        { error: "Email not found" },
         { status: 403 }
       ),
     };

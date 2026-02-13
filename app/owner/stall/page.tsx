@@ -181,12 +181,6 @@ export default function StallOwnerPage() {
           return;
         }
 
-        if (!ALLOWED_OWNER_EMAILS.includes(email)) {
-          setStatusMessage("Email is not approved for access.");
-          setIsLoading(false);
-          return;
-        }
-
         setOwnerEmail(email);
         const response = await fetch("/api/stalls", {
           headers: {

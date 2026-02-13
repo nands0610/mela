@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { ALLOWED_OWNER_EMAILS } from "@/lib/auth/allowlist";
 
 const r2Client = new S3Client({
   endpoint: process.env.R2_ENDPOINT,
@@ -53,10 +52,10 @@ async function getAuthorizedEmail(request: NextRequest) {
   }
 
   const email = data.user.email?.toLowerCase();
-  if (!email || !ALLOWED_OWNER_EMAILS.includes(email)) {
+  if (!email) {
     return {
       response: NextResponse.json(
-        { error: "Email not allowed" },
+        { error: "Email not found" },
         { status: 403 }
       ),
     };
