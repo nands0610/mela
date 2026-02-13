@@ -24,6 +24,23 @@ const initialFormState = {
   paymentMethods: "",
 };
 
+type MenuItem = { name: string; price: string };
+type Review = { user: string; rating: number; comment: string };
+type LimitedOffer = { title: string; description?: string; validTill?: string };
+type StallPayload = typeof initialFormState & {
+  bannerImage?: string;
+  logoImage?: string;
+  images?: string[];
+  items?: MenuItem[];
+  highlights?: string[];
+  bestSellers?: string[];
+  offers?: string[];
+  availableAt?: string[];
+  reviews?: Review[];
+  limitedTimeOffers?: LimitedOffer[];
+  paymentMethods?: string[];
+};
+
 type GalleryItem = {
   id: string;
   name: string;
@@ -103,8 +120,8 @@ function parseLimitedOffers(value: string) {
       if (!title) return null;
       return {
         title,
-        description: description || undefined,
-        validTill: validTill || undefined,
+        ...(description ? { description } : {}),
+        ...(validTill ? { validTill } : {}),
       };
     })
     .filter(
@@ -156,14 +173,19 @@ export default function StallOwnerPage() {
     logoStatus === "uploading" ||
     galleryItems.some((item) => item.status === "uploading");
 
-  const bucketBase = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
+  const bucketBases = [
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL,
+    process.env.NEXT_PUBLIC_R2_BUCKET_URL,
+  ].filter(Boolean) as string[];
   const toMediaUrl = (url: string | null): string | null => {
     if (!url) return null;
     if (url.startsWith("blob:")) return url;
     if (url.startsWith("/api/media")) return url;
-    if (url.startsWith(bucketBase) && bucketBase) {
-      const key = url.replace(bucketBase + "/", "");
-      return `/api/media?key=${encodeURIComponent(key)}`;
+    for (const base of bucketBases) {
+      if (url.startsWith(base)) {
+        const key = url.replace(base.replace(/\/+$/, "") + "/", "");
+        return `/api/media?key=${encodeURIComponent(key)}`;
+      }
     }
     return url;
   };
@@ -199,15 +221,31 @@ export default function StallOwnerPage() {
 
         if (response.ok) {
           const result = await response.json();
-          const payload = result.submission?.payload as
-            | (typeof initialFormState & {
-                bannerImage?: string;
-                logoImage?: string;
-                images?: string[];
-              })
-            | undefined;
+          const payload = result.submission?.payload as StallPayload | undefined;
 
           if (payload) {
+            const itemsValue = Array.isArray(payload.items) ? payload.items : [];
+            const highlightsValue = Array.isArray(payload.highlights)
+              ? payload.highlights
+              : [];
+            const bestSellersValue = Array.isArray(payload.bestSellers)
+              ? payload.bestSellers
+              : [];
+            const offersValue = Array.isArray(payload.offers)
+              ? payload.offers
+              : [];
+            const availableAtValue = Array.isArray(payload.availableAt)
+              ? payload.availableAt
+              : [];
+            const reviewsValue = Array.isArray(payload.reviews)
+              ? payload.reviews
+              : [];
+            const limitedTimeOffersValue = Array.isArray(payload.limitedTimeOffers)
+              ? payload.limitedTimeOffers
+              : [];
+            const paymentMethodsValue = Array.isArray(payload.paymentMethods)
+              ? payload.paymentMethods
+              : [];
             setFormValues({
               ...initialFormState,
               name: payload.name ?? "",
@@ -218,20 +256,20 @@ export default function StallOwnerPage() {
               ownerPhone: payload.ownerPhone ?? "",
               instagram: payload.instagram ?? "",
               stallNumber: payload.stallNumber ?? "",
-              items: (payload.items ?? [])
+              items: itemsValue
                 .map((item) => `${item.name} - ${item.price}`)
                 .join("\n"),
-              highlights: (payload.highlights ?? []).join(", "),
-              bestSellers: (payload.bestSellers ?? []).join(", "),
-              offers: (payload.offers ?? []).join(", "),
-              availableAt: (payload.availableAt ?? []).join(", "),
-              reviews: (payload.reviews ?? [])
+              highlights: highlightsValue.join(", "),
+              bestSellers: bestSellersValue.join(", "),
+              offers: offersValue.join(", "),
+              availableAt: availableAtValue.join(", "),
+              reviews: reviewsValue
                 .map(
                   (review) =>
                     `${review.user} - ${review.rating} - ${review.comment}`
                 )
                 .join("\n"),
-              limitedTimeOffers: (payload.limitedTimeOffers ?? [])
+              limitedTimeOffers: limitedTimeOffersValue
                 .map(
                   (offer) =>
                     `${offer.title} - ${offer.description ?? ""} - ${
@@ -239,7 +277,7 @@ export default function StallOwnerPage() {
                     }`
                 )
                 .join("\n"),
-              paymentMethods: (payload.paymentMethods ?? []).join(", "),
+              paymentMethods: paymentMethodsValue.join(", "),
             });
 
             if (payload.bannerImage) setBannerUrl(payload.bannerImage);
@@ -364,6 +402,24 @@ export default function StallOwnerPage() {
         error instanceof Error ? error.message : "Failed to upload logo image."
       );
     }
+  };
+
+  const handleRemoveBanner = () => {
+    if (bannerPreview) {
+      revokeIfBlob(bannerPreview);
+    }
+    setBannerPreview(null);
+    setBannerUrl(null);
+    setBannerStatus("idle");
+  };
+
+  const handleRemoveLogo = () => {
+    if (logoPreview) {
+      revokeIfBlob(logoPreview);
+    }
+    setLogoPreview(null);
+    setLogoUrl(null);
+    setLogoStatus("idle");
   };
 
   const updateGalleryItem = (id: string, patch: Partial<GalleryItem>) => {
@@ -565,9 +621,9 @@ export default function StallOwnerPage() {
             className="flex items-center gap-4 rounded-2xl border border-neutral-100 bg-white p-4 shadow-sm transition hover:border-orange-200"
           >
             <div className="h-14 w-14 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50">
-              {logoUrl ? (
+              {logoPreview || logoUrl ? (
                 <img
-                  src={logoUrl}
+                  src={toMediaUrl(logoPreview ?? logoUrl) ?? ""}
                   alt="Stall logo"
                   className="h-full w-full object-contain"
                 />
@@ -870,12 +926,21 @@ export default function StallOwnerPage() {
                     className="sr-only"
                   />
                   {(bannerPreview || bannerUrl) && (
-                    <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200">
+                    <div className="relative mt-3 overflow-hidden rounded-2xl border border-neutral-200">
                       <img
                         src={toMediaUrl(bannerPreview ?? bannerUrl) ?? ""}
                         alt="Banner preview"
                         className="h-48 w-full object-cover"
                       />
+                      <button
+                        type="button"
+                        onClick={handleRemoveBanner}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-xs font-semibold text-neutral-700 shadow-sm transition hover:bg-white"
+                        aria-label="Remove banner image"
+                        title="Remove banner"
+                      >
+                        x
+                      </button>
                     </div>
                   )}
                   <p className="mt-2 text-xs text-neutral-500">
@@ -906,12 +971,21 @@ export default function StallOwnerPage() {
                     className="sr-only"
                   />
                   {(logoPreview || logoUrl) && (
-                    <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="relative mt-3 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
                       <img
                         src={toMediaUrl(logoPreview ?? logoUrl) ?? ""}
                         alt="Logo preview"
                         className="h-24 w-24 rounded-2xl object-contain"
                       />
+                      <button
+                        type="button"
+                        onClick={handleRemoveLogo}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-xs font-semibold text-neutral-700 shadow-sm transition hover:bg-white"
+                        aria-label="Remove logo image"
+                        title="Remove logo"
+                      >
+                        x
+                      </button>
                     </div>
                   )}
                   <p className="mt-2 text-xs text-neutral-500">
@@ -952,7 +1026,10 @@ export default function StallOwnerPage() {
                           className="relative overflow-hidden rounded-xl border border-neutral-200"
                         >
                           <img
-                            src={toMediaUrl(item.previewUrl) ?? item.previewUrl}
+                            src={
+                              toMediaUrl(item.uploadedUrl ?? item.previewUrl) ??
+                              item.previewUrl
+                            }
                             alt={item.name}
                             className="h-24 w-full object-cover"
                           />
@@ -960,9 +1037,11 @@ export default function StallOwnerPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveGalleryItem(item.id)}
-                            className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-neutral-700"
+                            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs font-semibold text-neutral-700 shadow-sm transition hover:bg-white"
+                            aria-label={`Remove ${item.name}`}
+                            title="Remove image"
                           >
-                            Remove
+                            x
                           </button>
                           <span className="absolute bottom-2 left-2 rounded-full bg-white/90 px-2 py-1 text-[10px] uppercase tracking-wide text-neutral-700">
                             {item.status}
