@@ -10,7 +10,7 @@ import { LimitedOfferCard } from "./LimitedOfferCard";
 
 const initialFormState = {
   name: "",
-  slug: "",
+  // slug: "",
   category: "food",
   description: "",
   ownerName: "",
@@ -160,15 +160,16 @@ export default function StallOwnerPage() {
   const [formValues, setFormValues] = useState(initialFormState);
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([{ name: "", price: "" }]);
-  const [originalSlug, setOriginalSlug] = useState<string | null>(null);
+  // const [originalSlug, setOriginalSlug] = useState<string | null>(null);
+  const [stallSlug, setStallSlug] = useState<string | null>(null)
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [bannerStatus, setBannerStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoStatus, setLogoStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
-  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [slugMessage, setSlugMessage] = useState<string | null>(null);
+  // const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  // const [slugMessage, setSlugMessage] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const galleryItemsRef = useRef<GalleryItem[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -320,6 +321,7 @@ export default function StallOwnerPage() {
 
         if (response.ok) {
           const result = await response.json();
+          setStallSlug(result.submission?.stall_slug ?? null);
           const payload = result.submission?.payload as StallPayload | undefined;
 
           if (payload) {
@@ -348,7 +350,7 @@ export default function StallOwnerPage() {
             setFormValues({
               ...initialFormState,
               name: payload.name ?? "",
-              slug: payload.slug ?? "",
+              // slug: payload.slug ?? "",
               category: payload.category ?? "food",
               description: payload.description ?? "",
               ownerName: payload.ownerName ?? "",
@@ -389,9 +391,9 @@ export default function StallOwnerPage() {
               limitedTimeOffersValue.length ? limitedTimeOffersValue : [{ title: "", description: "", validTill: "" }]
             );
 
-            if (payload.slug) {
-              setOriginalSlug(payload.slug.trim().toLowerCase());
-            }
+            // if (payload.slug) {
+            //   setOriginalSlug(payload.slug.trim().toLowerCase());
+            // }
 
             if (payload.bannerImage) setBannerUrl(payload.bannerImage);
             if (payload.logoImage) setLogoUrl(payload.logoImage);
@@ -442,50 +444,50 @@ export default function StallOwnerPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const nextSlug = formValues.slug.trim().toLowerCase();
-    if (!nextSlug) {
-      setSlugStatus("idle");
-      setSlugMessage(null);
-      return;
-    }
+  // useEffect(() => {
+  //   const nextSlug = formValues.slug.trim().toLowerCase();
+  //   if (!nextSlug) {
+  //     setSlugStatus("idle");
+  //     setSlugMessage(null);
+  //     return;
+  //   }
 
-    if (originalSlug && nextSlug === originalSlug) {
-      setSlugStatus("available");
-      setSlugMessage(null);
-      return;
-    }
+  //   if (originalSlug && nextSlug === originalSlug) {
+  //     setSlugStatus("available");
+  //     setSlugMessage(null);
+  //     return;
+  //   }
 
-    setSlugStatus("checking");
-    setSlugMessage(null);
-    let isActive = true;
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/public/stalls/${encodeURIComponent(nextSlug)}`);
-        if (!response.ok) {
-          throw new Error("Failed to validate slug");
-        }
-        const data = await response.json();
-        if (!isActive) return;
-        if (data?.stall) {
-          setSlugStatus("taken");
-          setSlugMessage("Short link already taken.");
-        } else {
-          setSlugStatus("available");
-          setSlugMessage(null);
-        }
-      } catch {
-        if (!isActive) return;
-        setSlugStatus("idle");
-        setSlugMessage(null);
-      }
-    }, 400);
+  //   setSlugStatus("checking");
+  //   setSlugMessage(null);
+  //   let isActive = true;
+  //   const timer = setTimeout(async () => {
+  //     try {
+  //       const response = await fetch(`/api/public/stalls/${encodeURIComponent(nextSlug)}`);
+  //       if (!response.ok) {
+  //         throw new Error("Failed to validate slug");
+  //       }
+  //       const data = await response.json();
+  //       if (!isActive) return;
+  //       if (data?.stall) {
+  //         setSlugStatus("taken");
+  //         setSlugMessage("Short link already taken.");
+  //       } else {
+  //         setSlugStatus("available");
+  //         setSlugMessage(null);
+  //       }
+  //     } catch {
+  //       if (!isActive) return;
+  //       setSlugStatus("idle");
+  //       setSlugMessage(null);
+  //     }
+  //   }, 400);
 
-    return () => {
-      isActive = false;
-      clearTimeout(timer);
-    };
-  }, [formValues.slug, originalSlug]);
+  //   return () => {
+  //     isActive = false;
+  //     clearTimeout(timer);
+  //   };
+  // }, [formValues.slug, originalSlug]);
 
   const getAccessToken = async () => {
     const supabase = createBrowserSupabaseClient();
@@ -650,11 +652,11 @@ export default function StallOwnerPage() {
     setIsSubmitting(true);
 
     try {
-      if (slugStatus === "taken") {
-        setStatusMessage("Short link already taken. Choose another.");
-        setIsSubmitting(false);
-        return;
-      }
+      // if (slugStatus === "taken") {
+      //   setStatusMessage("Short link already taken. Choose another.");
+      //   setIsSubmitting(false);
+      //   return;
+      // }
 
       if (!bannerUrl) {
         setStatusMessage("Please upload a banner image before saving.");
@@ -671,7 +673,7 @@ export default function StallOwnerPage() {
 
       const payload = {
         name: formValues.name.trim(),
-        slug: formValues.slug.trim(),
+        // slug: formValues.slug.trim(),
         category: formValues.category,
         description: formValues.description.trim(),
         bannerImage: bannerUrl ?? "",
@@ -704,16 +706,14 @@ export default function StallOwnerPage() {
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
-        if (response.status === 409) {
-          setStatusMessage("Short link already taken. Choose another.");
-        } else {
-          setStatusMessage(errorBody?.error || "Failed to save details.");
-        }
+        setStatusMessage(errorBody?.error || "Failed to save details.");
         return;
       }
 
+      const result = await response.json();
+      setStallSlug(result?.submission?.stall_slug ?? null);
       setStatusMessage("Saved! You can update this anytime.");
-    } catch (error) {
+    } catch (error) { 
       setStatusMessage(
         error instanceof Error ? error.message : "Failed to save details."
       );
@@ -836,6 +836,33 @@ export default function StallOwnerPage() {
           </button>
         </div>
 
+        {stallSlug && (
+          <div className="mt-4">
+            <label className="text-sm font-medium text-orange-700">Your short link</label>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                value={`${process.env.NEXT_PUBLIC_SHORT_DOMAIN}/${stallSlug}`}
+                readOnly
+                className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm bg-neutral-50 text-neutral-900"
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  navigator.clipboard.writeText(
+                    `${process.env.NEXT_PUBLIC_SHORT_DOMAIN}/${stallSlug}`
+                  )
+                }
+                className="shrink-0 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 hover:border-orange-300 hover:text-orange-600"
+              >
+                Copy
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">
+              This link is generated automatically from your stall name. The first time you save, it will be set and cannot be changed. Make sure you're happy with it!
+            </p>
+          </div>
+        )}
+
         {showDetails && (
           <form
             className="grid grid-cols-1 gap-8 lg:grid-cols-3"
@@ -858,7 +885,7 @@ export default function StallOwnerPage() {
                     className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 text-neutral-900"
                   />
                 </div>
-                <div>
+                {/* <div>
                   <label className="text-sm font-medium text-orange-700" htmlFor="slug">
                     Short link *
                   </label>
@@ -884,7 +911,7 @@ export default function StallOwnerPage() {
                       ? "Checking availability..."
                       : slugMessage ?? "Keep it short and unique."}
                   </p>
-                </div>
+                </div> */}
                 <div>
                   <label className="text-sm font-medium text-orange-700" htmlFor="category">
                     Category *
@@ -1307,7 +1334,8 @@ export default function StallOwnerPage() {
               <div className="mt-4 space-y-3">
                 <button
                   type="submit"
-                  disabled={isSubmitting || isUploading || slugStatus === "taken" || slugStatus === "checking"}
+                  // disabled={isSubmitting || isUploading || slugStatus === "taken" || slugStatus === "checking"}
+                  disabled={isSubmitting || isUploading}
                   className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(255,140,0,0.3)] transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? "Saving..." : "Save stall details"}
