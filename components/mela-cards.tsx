@@ -30,6 +30,7 @@ export default function Card({ value, image }: CardProps) {
         src={image}
         alt={value}
         fill
+        sizes="(min-width: 1024px) 33vw, 100vw"
         className="object-cover"
       />
 
