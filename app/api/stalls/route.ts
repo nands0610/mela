@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { upsertShortUrl } from "@/lib/ssnlat/urls";
 
 const REQUIRED_FIELDS = [
   "name",
@@ -128,12 +129,6 @@ async function getRequestContext(request: NextRequest) {
 async function saveSubmission(payload: StallSubmission, email: string) {
   const supabase = createServerSupabaseClient();
 
-  // ALWAYS generate slug from name
-  const baseSlug = slugify(payload.name);
-  if (!baseSlug) {
-    return NextResponse.json({ error: "Invalid stall name" }, { status: 400 });
-  }
-
   // Find existing submission for this owner (if any)
   const { data: existing, error: existingErr } = await supabase
     .from("stall_submissions")
@@ -150,31 +145,39 @@ async function saveSubmission(payload: StallSubmission, email: string) {
     );
   }
 
-  // Ensure unique slug across OTHER owners; suffix if needed
-  let candidate = baseSlug;
-  let i = 2;
+  // KEEP stall_slug immutable once set
+  let finalSlug = existing?.stall_slug ?? "";
 
-  while (true) {
-    const { data: clash, error: clashErr } = await supabase
-      .from("stall_submissions")
-      .select("id, owner_email")
-      .eq("stall_slug", candidate)
-      .maybeSingle();
-
-    if (clashErr) {
-      return NextResponse.json(
-        { error: "Failed to validate slug", details: clashErr.message },
-        { status: 500 }
-      );
+  // Only generate slug the FIRST time (when no existing submission)
+  if (!finalSlug) {
+    const baseSlug = slugify(payload.name);
+    if (!baseSlug) {
+      return NextResponse.json({ error: "Invalid stall name" }, { status: 400 });
     }
 
-    // available
-    if (!clash) break;
+    // Ensure unique slug across all stalls; suffix if needed
+    let candidate = baseSlug;
+    let i = 2;
 
-    // same row (owner updating)
-    if (existing?.id && clash.id === existing.id) break;
+    while (true) {
+      const { data: clash, error: clashErr } = await supabase
+        .from("stall_submissions")
+        .select("id")
+        .eq("stall_slug", candidate)
+        .maybeSingle();
 
-    candidate = `${baseSlug}-${i++}`;
+      if (clashErr) {
+        return NextResponse.json(
+          { error: "Failed to validate slug", details: clashErr.message },
+          { status: 500 }
+        );
+      }
+
+      if (!clash) break;
+      candidate = `${baseSlug}-${i++}`;
+    }
+
+    finalSlug = candidate;
   }
 
   // Mirror slug into payload for convenience (optional)
@@ -185,7 +188,7 @@ async function saveSubmission(payload: StallSubmission, email: string) {
     const { data: updated, error: updErr } = await supabase
       .from("stall_submissions")
       .update({
-        stall_slug: candidate,
+        // stall_slug: candidate,
         payload: normalizedPayload,
       })
       .eq("id", existing.id)
@@ -199,14 +202,29 @@ async function saveSubmission(payload: StallSubmission, email: string) {
       );
     }
 
-    return NextResponse.json({ ok: true, submission: updated ?? null });
+    const siteBase = process.env.SITE_BASE_URL!;
+    const category = payload.category;
+    const longUrl = `${siteBase}/${category}/${finalSlug}`;
+
+    const ssn = await upsertShortUrl(finalSlug, longUrl);
+
+    if (!ssn.ok) {
+      return NextResponse.json(
+        { error: "Saved stall but failed to create short link", details: ssn.error.message },
+        { status: 502 }
+      );
+    }
+
+    const shortUrl = `${process.env.SSNLAT_BASE_URL}/${finalSlug}`;
+    return NextResponse.json({ ok: true, submission: updated ?? null, short_url: shortUrl });
+    // return NextResponse.json({ ok: true, submission: updated ?? null });
   }
 
   const { data: inserted, error: insErr } = await supabase
     .from("stall_submissions")
     .insert({
       owner_email: email,
-      stall_slug: candidate,
+      stall_slug: finalSlug,
       payload: normalizedPayload,
     })
     .select("id, payload, created_at, stall_slug")
@@ -219,7 +237,22 @@ async function saveSubmission(payload: StallSubmission, email: string) {
     );
   }
 
-  return NextResponse.json({ ok: true, submission: inserted ?? null });
+  const siteBase = process.env.SITE_BASE_URL!;
+  const category = payload.category;
+  const longUrl = `${siteBase}/${category}/${finalSlug}`;
+
+  const ssn = await upsertShortUrl(finalSlug, longUrl);
+
+  if (!ssn.ok) {
+    return NextResponse.json(
+      { error: "Saved stall but failed to create short link", details: ssn.error.message },
+      { status: 502 }
+    );
+  }
+
+  const shortUrl = `${process.env.SSNLAT_BASE_URL}/${finalSlug}`;
+  return NextResponse.json({ ok: true, submission: inserted ?? null, short_url: shortUrl });
+  // return NextResponse.json({ ok: true, submission: inserted ?? null });
 }
 
 async function parsePayload(request: NextRequest) {

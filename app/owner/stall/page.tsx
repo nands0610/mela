@@ -843,7 +843,7 @@ export default function StallOwnerPage() {
               <input
                 value={`${process.env.NEXT_PUBLIC_SHORT_DOMAIN}/${stallSlug}`}
                 readOnly
-                className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm bg-neutral-50 text-neutral-900"
+                className="w-full rounded-xl border border-orange-400 px-4 py-3 text-sm bg-neutral-50 text-neutral-900"
               />
               <button
                 type="button"
@@ -852,7 +852,7 @@ export default function StallOwnerPage() {
                     `${process.env.NEXT_PUBLIC_SHORT_DOMAIN}/${stallSlug}`
                   )
                 }
-                className="shrink-0 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 hover:border-orange-300 hover:text-orange-600"
+                className="shrink-0 rounded-xl border border-orange-300 bg-orange-600 px-4 py-3 text-sm font-semibold text-white hover:border-orange-400 hover:bg-orange-100"
               >
                 Copy
               </button>
